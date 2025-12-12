@@ -6,11 +6,11 @@ import com.siddh.chat_app_backend.document.Message;
 import com.siddh.chat_app_backend.document.Room;
 import com.siddh.chat_app_backend.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -18,6 +18,9 @@ import java.util.stream.Collectors;
 public class RoomService {
 
     private final RoomRepository roomRepository;
+    private final Map<String, List<String>> activeUsers = new ConcurrentHashMap<>();
+    private final SimpMessagingTemplate messagingTemplate;
+
 
     //create room
     public RoomDTO createRoom(RoomDTO roomDTO){
@@ -86,6 +89,28 @@ public class RoomService {
                 .collect(Collectors.toList());
     }
 
+    // Add user when joining a room
+    public void addUserToRoom(String roomId, String username) {
+        activeUsers.computeIfAbsent(roomId, k -> new ArrayList<>());
+        List<String> users = activeUsers.get(roomId);
+        if (!users.contains(username)) {
+            users.add(username);
+        }
+
+        // Notify all clients of the updated user list
+        messagingTemplate.convertAndSend("/topic/users/" + roomId, users);
+    }
+
+    // Remove user from room (when leaving or disconnecting)
+    public void removeUserFromRoom(String roomId, String username) {
+        List<String> users = activeUsers.get(roomId);
+        if (users != null) {
+            users.remove(username);
+            messagingTemplate.convertAndSend("/topic/users/" + roomId, users);
+        }
+    }
+
+
     private RoomDTO convertToDTO(Room room) {
         List<MessageDTO> messageDTOs=room.getMessages() == null ?
                 Collections.emptyList() :
@@ -105,7 +130,6 @@ public class RoomService {
                 .timeStamp(message.getTimeStamp())
                 .build();
     }
-
 }
 
 

@@ -12,6 +12,7 @@ import { timeAgo } from '../config/timer';
 
 const ChatPage = () => {
 const {roomId,currentUser, connected,setConnected,setRoomId,setCurrentUser}=useChatContext();
+const [users,setUsers]=useState([]);
 // console.log(roomId);
 // console.log(currentUser);
 // console.log(connected);
@@ -77,6 +78,34 @@ const {roomId,currentUser, connected,setConnected,setRoomId,setCurrentUser}=useC
         }
     },[messages])
 
+    //for browser back button handling
+    useEffect(()=>{
+        const handleBeforeUnload=(event)=>{
+            if(stompClient && stompClient.connected){
+                try{
+                    stompClient.send(`/app/chat.leave`,{},JSON.stringify(
+                        {
+                            sender:currentUser,
+                            roomId:roomId
+                        }
+                    ));
+                }
+                catch(error){
+                    console.log("Error in sending leave message",error);
+                }
+                stompClient.disconnect(()=>{
+                    console.log("Disconnected before unload");
+                })
+            }
+        };
+
+        window.addEventListener("beforeunload",handleBeforeUnload);
+
+        return ()=>{
+            window.removeEventListener("beforeunload",handleBeforeUnload);
+        }
+    },[stompClient,roomId,currentUser]);
+
 
     //stomp client ko connect karna hai
     //stomp client ko subscribe karna hai   
@@ -87,26 +116,41 @@ const {roomId,currentUser, connected,setConnected,setRoomId,setCurrentUser}=useC
             const socket=new SockJS(`${baseURL}/api/v1.0/chat`);
             const client=Stomp.over(socket);
 
+            client.heartbeatOutgoing = 10000;
+            client.heartbeatIncoming = 10000;
+
             client.connect({},()=>{
                 setStompClient(client);
                 toast.success("WebSocket connected");
 
+                //subscribe to the room
                 client.subscribe(`/topic/room/${roomId}`,(message)=>{
                     console.log(message);
                     const newMessage=JSON.parse(message.body);
                     setMessages((prevMessages)=>[...prevMessages,newMessage]);
-
                 })
+
+                //subscribe to the users list
+                client.subscribe(`/topic/users/${roomId}`,(message)=>{
+                    console.log("Got a user list: ",message.body);
+                    const usersList=JSON.parse(message.body);
+                    setUsers(usersList);
+                })
+
+                //sending the join message
+                client.send(`/app/chat.join`,{},JSON.stringify(
+                    {
+                        sender:currentUser,
+                        roomId:roomId
+                    }
+                ));
             });
         };
 
-        if(connected){
+        if(connected && roomId && currentUser){
             connectWebSocket();
         }
-
-        
-
-    },[roomId]);
+    },[roomId,connected,currentUser]);
 
     //send message function
     const sendMessage=async ()=>{
@@ -123,12 +167,26 @@ const {roomId,currentUser, connected,setConnected,setRoomId,setCurrentUser}=useC
 
     //handle logout
     const handleLogout=()=>{ 
-        stompClient.disconnect();
-        setConnected(false);
-        setRoomId("");
-        setCurrentUser("");
-        toast.success("Left the room successfully");
-        navigate("/");                           
+
+        if(stompClient && stompClient.connected){
+            stompClient.deactivate().then(()=>{
+                console.log("WebSocket disconnected successfully.");
+                setConnected(false);
+                setRoomId("");
+                setCurrentUser("");
+                toast.success("Left the room successfully");
+                navigate("/");
+            }).catch((error)=>{
+                console.log("Error in disconnecting WebSocket:",error);
+                navigate("/");
+            })
+        }
+        else{
+            setConnected(false);
+            setRoomId("");
+            setCurrentUser("");
+            navigate("/");
+        }                         
     }
 
 
@@ -152,6 +210,20 @@ const {roomId,currentUser, connected,setConnected,setRoomId,setCurrentUser}=useC
             className='bg-red-500 hover:bg-red-400 px-3 py-2 rounded text-white cursor-pointer border-2 border-red-900'>Leave Room</button>
         </div>
       </header>
+    <div className='flex pt-20'>
+      <aside className='w-1/4 bg-gray-200 p-4 h-screen text-black'>
+            <h3 className='text-lg font-bold mb-2'>
+                Active Users ({users.length})
+            </h3>
+            <ul className='list-disc pl-5'>
+                {users.map((user) => (
+                    <li key={user} className='mb-1'>
+                        {user}
+                        {user === currentUser && ' (You)'}
+                    </li>
+                ))}
+            </ul>
+        </aside>
 
         <main ref={chatBoxRef} className='px-10 py-20 border w-2/3 bg-slate-800 mx-auto h-screen overflow-auto text-white'>
            {messages.map((message,index)=>(
@@ -170,6 +242,7 @@ const {roomId,currentUser, connected,setConnected,setRoomId,setCurrentUser}=useC
             </div>
            ))}
         </main>
+    </div>
 
       <div className='fixed bottom-4 w-full h-12'>
         <div className='h-full pr-3 gap-3 flex items-center justify-between rounded border w-1/2 mx-auto bg-gray-300'>
@@ -183,7 +256,7 @@ const {roomId,currentUser, connected,setConnected,setRoomId,setCurrentUser}=useC
                 onClick={sendMessage}
                 className='bg-gray-800 text-white rounded h-8 w-14 flex justify-center items-center hover:bg-gray-600 cursor-pointer'><Send size={20}/></button>
                 <button 
-                onClick={sendMessage}
+                onClick={() => toast('File upload coming soon!')}
                 className='bg-blue-900 text-white rounded h-8 w-14 flex justify-center items-center hover:bg-blue-600 cursor-pointer'><File size={20}/></button>
             </div>
         </div>
