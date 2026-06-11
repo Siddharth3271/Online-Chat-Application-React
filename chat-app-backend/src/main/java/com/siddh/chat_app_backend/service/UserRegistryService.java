@@ -1,12 +1,13 @@
 package com.siddh.chat_app_backend.service;
 
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Component
+@Service
 public class UserRegistryService {
     private final Map<String,String>sessionUsers=new ConcurrentHashMap<>();
 

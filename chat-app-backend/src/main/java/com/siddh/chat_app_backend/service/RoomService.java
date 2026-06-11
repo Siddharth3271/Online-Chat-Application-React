@@ -14,12 +14,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class RoomService {
 
     private final RoomRepository roomRepository;
     private final Map<String, List<String>> activeUsers = new ConcurrentHashMap<>();
     private final SimpMessagingTemplate messagingTemplate;
+
+    public RoomService(RoomRepository roomRepository, SimpMessagingTemplate messagingTemplate) {
+        this.roomRepository = roomRepository;
+        this.messagingTemplate = messagingTemplate;
+    }
 
 
     //create room
