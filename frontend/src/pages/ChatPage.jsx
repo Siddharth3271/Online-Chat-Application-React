@@ -113,7 +113,7 @@ const [users,setUsers]=useState([]);
         //load messages function
         const connectWebSocket=()=>{
             //sockjs object
-            const socket=new SockJS(`${baseURL}/api/v1.0/chat`);
+            const socket=new SockJS(`${baseURL}/api/v1/chat`);
             const client=Stomp.over(socket);
 
             client.heartbeatOutgoing = 10000;

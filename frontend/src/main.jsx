@@ -10,12 +10,6 @@ import { ChatProvider } from './context/ChatContext.jsx'
 
 createRoot(document.getElementById('root')).render(
     <BrowserRouter>
-    <ChatProvider>
-    <Toaster/>
-    <Routes>
-      <Route path="/" element={<App /> }/>
-      <Route path="/chat" element={<ChatPage/>}/>
-    </Routes>
-    </ChatProvider>
+    <App/>
     </BrowserRouter>
 )
