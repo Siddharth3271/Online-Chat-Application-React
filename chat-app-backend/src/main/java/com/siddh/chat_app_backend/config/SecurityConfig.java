@@ -35,6 +35,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+        System.out.println("SecurityConfig Loaded");
         httpSecurity.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                         .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()

@@ -9,7 +9,10 @@ import ChatPage from './pages/ChatPage.jsx'
 import { ChatProvider } from './context/ChatContext.jsx'
 
 createRoot(document.getElementById('root')).render(
+    <ChatProvider>
     <BrowserRouter>
     <App/>
+    <Toaster/>
     </BrowserRouter>
+    </ChatProvider>
 )

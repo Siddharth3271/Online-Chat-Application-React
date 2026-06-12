@@ -1,7 +1,7 @@
 import { httpClient } from "./config/AxiosHelper";
 
 export const createRoomApi = async (roomDetail) => {
-  const response = await httpClient.post(`/api/v1.0/rooms/create`, roomDetail, {
+  const response = await httpClient.post(`/api/v1/rooms/create`, roomDetail, {
     headers: {
       "Content-Type":"application/json",
     },
@@ -10,7 +10,7 @@ export const createRoomApi = async (roomDetail) => {
 };
 
 export const joinChatApi=async (roomId) => {
-  const response = await httpClient.get(`/api/v1.0/rooms/${roomId}`);
+  const response = await httpClient.get(`/api/v1/rooms/${roomId}`);
   return response.data;
 };
 
